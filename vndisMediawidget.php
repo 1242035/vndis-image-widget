@@ -4,7 +4,7 @@
  * Plugin Name: Media Image Widget
  * Description: Provide a widget for images from media library
  * Version: 0.1
- * Author: Sunny Themes - Hong Anh
+ * Author: Hong Anh
  * Author URI: http://vndis.com
  */
 class Vndis_Image_Widget extends WP_Widget
@@ -35,6 +35,7 @@ class Vndis_Image_Widget extends WP_Widget
     function load_widget()
     {
         register_widget('Vndis_Image_Widget');
+        $this->addCss();
     }
 
     /**
@@ -46,7 +47,7 @@ class Vndis_Image_Widget extends WP_Widget
 
         /* Our variables from the widget settings. */
         $title = apply_filters('widget_title', $instance['title']);
-        $count = $instance['count'];
+        $count = isset($instance['count']) ? $instance['count'] : 5;
 
         /* Before widget (defined by themes). */
         $show = $before_widget;
@@ -60,7 +61,8 @@ class Vndis_Image_Widget extends WP_Widget
             $show .= "<ul>";
             foreach ($arrImages as $image)
             {
-                $show .= '<li><a href="#"><img src="' . $image->guid . '" alt=""/></a></li>';
+                var_dump($image); return;
+                $show .= '<li><a href="' .$image->url . '"><img src="' . $image->img . '" alt="'.$image->title .'"/></a></li>';
 			}
             $show .= "</ul>";
         }
@@ -118,15 +120,22 @@ class Vndis_Image_Widget extends WP_Widget
     function get_media_library_images($number = 5)
     {
         $args = array('post_type' => 'attachment', 'post_mime_type' => 'image', 'post_status' => 'inherit', 'posts_per_page' => $number, 'orderby' => 'rand');
-        $images = new WP_Query($args);        
+        $query_images = new WP_Query($args);
+        $images = array();
+        foreach ( $query_images->posts as $image) {
+            $obj        = new stdClass();
+            $obj->id    = $image->ID;
+            $obj->url   = get_attachment_link($image->ID);
+            $obj->img   = wp_get_attachment_url($image->ID);
+            $obj->title = get_the_title($image->post_parent);
+            $images[]= $obj;
+        }
         return $images;
     }
+    function addCss(){
+        wp_enqueue_style('image-widget-css', plugins_url('css/media.css', __FILE__ ) );
+    }
 }
-/*
-function addCss(){
-    wp_enqueue_style('image-widget-css', plugins_url('css/media.css', __FILE__ ) );
-}
-add_action( 'wp_enqueue_scripts', 'addCss' );
-* */
+
 //start the plugin
 $iWidget = new Vndis_Image_Widget();
